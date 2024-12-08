@@ -37,39 +37,32 @@ class CustomCollectionViewCell: UICollectionViewCell {
         self.myImageView.layer.masksToBounds = true
         
         self.addSubview(myImageView)
-        myImageView.translatesAutoresizingMaskIntoConstraints = false
+        self.addSubview(mealName)
+        self.addSubview(mealAreaView)
         
+        myImageView.translatesAutoresizingMaskIntoConstraints = false
+        mealName.translatesAutoresizingMaskIntoConstraints = false
+        mealAreaView.translatesAutoresizingMaskIntoConstraints = false
+
         NSLayoutConstraint.activate([
             myImageView.topAnchor.constraint(equalTo: self.topAnchor),
-            //myImageView.bottomAnchor.constraint(equalTo: self.bottomAnchor),
             myImageView.leadingAnchor.constraint(equalTo: self.leadingAnchor),
             myImageView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
+            
+            mealName.topAnchor.constraint(equalTo: self.myImageView.bottomAnchor, constant: 10),
+            mealName.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 8),
+            mealName.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -8),
+            mealName.heightAnchor.constraint(greaterThanOrEqualToConstant: 20),
+            
+            mealAreaView.topAnchor.constraint(equalTo: self.mealName.bottomAnchor, constant: 8),
+            mealAreaView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -16),
+            mealAreaView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 8),
+            mealAreaView.trailingAnchor.constraint(lessThanOrEqualTo: self.trailingAnchor)
         ])
-        
-        self.addSubview(mealName)
         
         mealName.font = .boldSystemFont(ofSize: 16)
         mealName.numberOfLines = 0
         mealName.lineBreakMode = .byWordWrapping
-        
-        mealName.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            mealName.topAnchor.constraint(equalTo: self.myImageView.bottomAnchor, constant: 10),
-            //mealName.bottomAnchor.constraint(equalTo: self.bottomAnchor),
-            mealName.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 8),
-            mealName.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -8),
-            mealName.heightAnchor.constraint(greaterThanOrEqualToConstant: 20),
-        ])
-        
-        self.addSubview(mealAreaView)
-        mealAreaView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            mealAreaView.topAnchor.constraint(equalTo: self.mealName.bottomAnchor, constant: 8),
-            mealAreaView.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -16),
-            mealAreaView.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: 8),
-            //mealAreaView.trailingAnchor.constraint(equalTo: self.trailingAnchor),
-            mealAreaView.trailingAnchor.constraint(lessThanOrEqualTo: self.trailingAnchor)
-        ])
     }
     
     override func prepareForReuse() {
