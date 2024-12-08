@@ -9,15 +9,28 @@ import Foundation
 
 class MealListViewModel {
     private(set) var meals: [MealDataModel] = []
-    private(set) var filteredMeals: [MealDataModel] = []
-    private(set) var availableAreas: [String] = []
-    private(set) var selectedAreas: Set<String> = []
     
     func updateMeals(_ newMeals: [MealDataModel]) {
         self.meals = newMeals
     }
     
-    func getMeals(searchQuery: String) async throws {
+    func getMeals(searchQuery: String) async throws -> [Meal] {
+        let urlString = "https://www.themealdb.com/api/json/v1/1/search.php?s=\(searchQuery)"
+        guard let url = URL(string: urlString) else {
+            throw MealsError.invalidServerResponse
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw MealsError.invalidServerResponse
+        }
+
+        let temp = try JSONDecoder().decode(MealContainer.self, from: data)
+        return temp.meals
+    }
+    
+    func getFilterArea(searchQuery: String) async throws -> [String] {
         let urlString = "https://www.themealdb.com/api/json/v1/1/search.php?s=\(searchQuery)"
         guard let url = URL(string: urlString) else {
             throw MealsError.invalidServerResponse
@@ -32,36 +45,14 @@ class MealListViewModel {
         // Decode the data into MealContainer
         let mealContainer = try JSONDecoder().decode(MealContainer.self, from: data)
         
-        // Update meals with new data
-        self.meals = mealContainer.meals.map { MealDataModel(meal: $0) }
-        
-        // Get unique areas for filtering
+        // Extract areas from the meals
         let areas = mealContainer.meals.compactMap { $0.area }
-        self.availableAreas = Array(Set(areas)) // Only unique areas
         
-        // Initially, all meals are shown if no area is selected
-        self.filteredMeals = meals
-    }
-    
-    func toggleAreaSelection(_ area: String) {
-            // If the area is already selected, deselect it
-        if selectedAreas.contains(area) {
-            selectedAreas.remove(area)
-        } else {
-            selectedAreas.insert(area)
-        }
+        // Get unique areas
+        let uniqueAreas = Array(Set(areas))
         
-        applyFilters()
-    }
-    
-    private func applyFilters() {
-        if selectedAreas.isEmpty {
-            // If no area is selected, show all meals
-            filteredMeals = meals
-        } else {
-            // Filter meals based on selected areas (OR logic)
-            filteredMeals = meals.filter { selectedAreas.contains($0.area) }
-        }
+        // Return the unique areas
+        return uniqueAreas
     }
 }
 
