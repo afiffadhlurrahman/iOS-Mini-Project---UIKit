@@ -5,179 +5,121 @@
 //  Created by Muhammad Afif Fadhlurrahman on 05/12/24.
 //
 
-import Foundation
 import UIKit
 
 class MealListViewController: UIViewController {
     private let viewModel = MealListViewModel()
-    private var filteredMeals: [MealDataModel] = []
-    
-    // Search state management
-    private var isSearchActive: Bool = false
-    
-    // MARK: - UI Elements
-    
-    private lazy var collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .vertical
-        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        collectionView.backgroundColor = .systemBackground
-        collectionView.register(CustomCollectionViewCell.self, forCellWithReuseIdentifier: CustomCollectionViewCell.identifier)
-        collectionView.dataSource = self
-        collectionView.delegate = self
-        return collectionView
-    }()
+    private var collectionView: UICollectionView!
+    private var areaFilterView: UICollectionView!
     
     // MARK: - Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
         configureUI()
-        Task { await populateMeals() }
+        Task {
+            do {
+                // Fetch meals and areas
+                try await viewModel.getMeals(searchQuery: "")
+                
+                // Reload both the meals list and filter list
+                DispatchQueue.main.async {
+                    self.collectionView.reloadData()
+                    self.areaFilterView.reloadData()
+                }
+            } catch {
+                print("Error fetching meals: \(error)")
+            }
+        }
     }
     
     // MARK: - UI Configuration
     
     private func configureUI() {
-        self.navigationController?.navigationBar.prefersLargeTitles = true
-        self.title = "Choose Your Menu"
-        setupSearchBar()
+        setupAreaFilterView()
         setupCollectionView()
     }
     
-    private func setupSearchBar() {
-        let searchController = UISearchController(searchResultsController: nil)
-        searchController.searchResultsUpdater = self
-        searchController.obscuresBackgroundDuringPresentation = false
-        searchController.searchBar.placeholder = "Search Meals"
-        navigationItem.searchController = searchController
-        navigationItem.hidesSearchBarWhenScrolling = false
+    private func setupAreaFilterView() {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        areaFilterView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        areaFilterView.register(AreaFilterCell.self, forCellWithReuseIdentifier: AreaFilterCell.identifier)
+        areaFilterView.dataSource = self
+        areaFilterView.delegate = self
+        view.addSubview(areaFilterView)
+        
+        // Layout Constraints for area filter
+        areaFilterView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            areaFilterView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            areaFilterView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            areaFilterView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            areaFilterView.heightAnchor.constraint(equalToConstant: 50)
+        ])
     }
     
     private func setupCollectionView() {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .vertical
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.register(CustomCollectionViewCell.self, forCellWithReuseIdentifier: CustomCollectionViewCell.identifier)
+        collectionView.dataSource = self
+        collectionView.delegate = self
         view.addSubview(collectionView)
+        
+        // Layout Constraints for the main meal list
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+            collectionView.topAnchor.constraint(equalTo: areaFilterView.bottomAnchor, constant: 10),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
     }
-    
-    // MARK: - Data Fetching
-    
-    private func populateMeals() async {
-        await fetchMeals(searchQuery: "")
-    }
-    
-    private func fetchMeals(searchQuery: String) async {
-        do {
-            let meals = try await Webservice().getMeals(searchQuery: searchQuery)
-            self.filteredMeals = meals.map { MealDataModel(meal: $0) }
-            DispatchQueue.main.async { self.collectionView.reloadData() }
-        } catch {
-            print("Error fetching meals: \(error)")
-        }
-    }
-    
-    // MARK: - Meal Filtering
-    
-    private func filterMeals(for searchText: String) {
-        Task { await fetchMeals(searchQuery: searchText) }
-    }
-    
-    private func combineIngredients(measurements: [String?], ingredients: [String?]) -> [String] {
-        let count = min(measurements.count, ingredients.count)
-        var combinedIngredients = [String]()
-        
-        for index in 0..<count {
-            guard let measurement = measurements[index]?.trimmingCharacters(in: .whitespacesAndNewlines), !measurement.isEmpty,
-                  let ingredient = ingredients[index]?.trimmingCharacters(in: .whitespacesAndNewlines), !ingredient.isEmpty else {
-                continue
-            }
-            combinedIngredients.append("\(measurement) of \(ingredient)")
-        }
-        return combinedIngredients
-    }
-    
-    // MARK: - Navigation
-    
-    private func navigateToDetail(meal: MealDataModel) {
-        let detailVC = DetailMenuViewController()
-        detailVC.mealThumb = meal.mealThumb?.absoluteString
-        detailVC.mealName = meal.mealName
-        detailVC.mealArea = meal.area
-        detailVC.mealYoutube = meal.mealYoutube?.absoluteString
-        detailVC.mealInstruction = meal.instruction
-        
-        let measurements = [
-            meal.measure1, meal.measure2, meal.measure3, meal.measure4, meal.measure5,
-            meal.measure6, meal.measure7, meal.measure8, meal.measure9, meal.measure10,
-            meal.measure11, meal.measure12, meal.measure13, meal.measure14, meal.measure15,
-            meal.measure16, meal.measure17, meal.measure18, meal.measure19, meal.measure20
-        ].compactMap { $0 }
-        
-        let ingredients = [
-            meal.ingredient1, meal.ingredient2, meal.ingredient3, meal.ingredient4, meal.ingredient5,
-            meal.ingredient6, meal.ingredient7, meal.ingredient8, meal.ingredient9, meal.ingredient10,
-            meal.ingredient11, meal.ingredient12, meal.ingredient13, meal.ingredient14, meal.ingredient15,
-            meal.ingredient16, meal.ingredient17, meal.ingredient18, meal.ingredient19, meal.ingredient20
-        ].compactMap { $0 }
-        
-        detailVC.mealIngredients = combineIngredients(measurements: measurements, ingredients: ingredients)
-        navigationController?.pushViewController(detailVC, animated: true)
-    }
 }
 
-// MARK: - UISearchResultsUpdating
+// MARK: - UICollectionView DataSource and Delegate for Area Filters
 
-extension MealListViewController: UISearchResultsUpdating {
-    func updateSearchResults(for searchController: UISearchController) {
-        guard let searchText = searchController.searchBar.text else { return }
-        filterMeals(for: searchText)
-    }
-}
-
-// MARK: - UICollectionViewDataSource
-
-extension MealListViewController: UICollectionViewDataSource {
+extension MealListViewController: UICollectionViewDataSource, UICollectionViewDelegate {
+    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return filteredMeals.count
+        return collectionView == areaFilterView ? viewModel.availableAreas.count : viewModel.filteredMeals.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CustomCollectionViewCell.identifier, for: indexPath) as? CustomCollectionViewCell else {
-            fatalError("Failed to dequeue cell.")
+        if collectionView == areaFilterView {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: AreaFilterCell.identifier, for: indexPath) as! AreaFilterCell
+            let area = viewModel.availableAreas[indexPath.row]
+            let isSelected = viewModel.selectedAreas.contains(area)
+            cell.configure(with: area, isSelected: isSelected)
+            return cell
+        } else {
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CustomCollectionViewCell.identifier, for: indexPath) as! CustomCollectionViewCell
+            let meal = viewModel.filteredMeals[indexPath.row]
+            cell.configure(with: meal.mealThumb, mealName: meal.mealName, mealArea: meal.area)
+            return cell
         }
-        
-        let selectedMeal = filteredMeals[indexPath.row]
-        cell.configure(with: selectedMeal.mealThumb, mealName: selectedMeal.mealName, mealArea: selectedMeal.area)
-        return cell
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let selectedMeal = filteredMeals[indexPath.row]
-        navigateToDetail(meal: selectedMeal)
+        if collectionView == areaFilterView {
+            let selectedArea = viewModel.availableAreas[indexPath.row]
+            viewModel.toggleAreaSelection(selectedArea)
+            collectionView.reloadData() // Reload filter view to show selection
+            self.collectionView.reloadData() // Reload meal list to apply filtering
+        }
     }
 }
 
-// MARK: - UICollectionViewDelegateFlowLayout
+// MARK: - UICollectionViewFlowLayout
 
 extension MealListViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: view.frame.width * 0.42, height: view.frame.height * 0.3)
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return 20
-    }
-    
-//    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
-//        return 0
-//    }
-    
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
-        return UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
+        if collectionView == areaFilterView {
+            return CGSize(width: 100, height: 40)
+        } else {
+            return CGSize(width: view.frame.width * 0.42, height: view.frame.height * 0.3)
+        }
     }
 }
