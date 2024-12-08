@@ -10,13 +10,24 @@ import Foundation
 class MealListViewModel {
     private(set) var meals: [MealDataModel] = []
     
-    func populateMeals(url: URL) async {
-        do {
-            let meals = try await Webservice().getMeals(url: url)
-            self.meals = meals.map(MealDataModel.init)
-        } catch {
-            print(error)
+    func updateMeals(_ newMeals: [MealDataModel]) {
+        self.meals = newMeals
+    }
+    
+    func getMeals(searchQuery: String) async throws -> [Meal] {
+        let urlString = "https://www.themealdb.com/api/json/v1/1/search.php?s=\(searchQuery)"
+        guard let url = URL(string: urlString) else {
+            throw MealsError.invalidServerResponse
         }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw MealsError.invalidServerResponse
+        }
+
+        let temp = try JSONDecoder().decode(MealContainer.self, from: data)
+        return temp.meals
     }
 }
 

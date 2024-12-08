@@ -12,7 +12,12 @@ enum MealsError: Error {
 }
 
 class Webservice {
-    func getMeals(url: URL) async throws -> [Meal] {
+    func getMeals(searchQuery: String) async throws -> [Meal] {
+        // Create the URL by appending the search query to the base URL
+        guard let url = URL(string: "https://www.themealdb.com/api/json/v1/1/search.php?s=\(searchQuery)") else {
+            throw MealsError.invalidServerResponse
+        }
+
         let (data, response) = try await URLSession.shared.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse,

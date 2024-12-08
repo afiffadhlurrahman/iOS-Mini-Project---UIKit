@@ -12,7 +12,7 @@ class DetailMenuViewController: UIViewController {
     var mealThumb: String?
     var mealName: String?
     var mealArea: String?
-    var mealIngredients: [String] = [] 
+    var mealIngredients: [String] = []
     var mealIngredient1: String?
     var mealInstruction: String?
     var mealYoutube: String?
@@ -58,6 +58,9 @@ class DetailMenuViewController: UIViewController {
         contentView.addSubview(availableOnYoutube)
         contentView.addSubview(youtubeSymbolView)
         
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        
         // Enable scrolling
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
@@ -94,13 +97,13 @@ class DetailMenuViewController: UIViewController {
             // UI Elements constraints
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            imageView.widthAnchor.constraint(equalToConstant: 400),
-            imageView.heightAnchor.constraint(equalToConstant: 400),
+            imageView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            imageView.heightAnchor.constraint(equalTo: imageView.widthAnchor),
             
-            areaLabelView.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 10),
+            areaLabelView.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 16),
             areaLabelView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             
-            ingredientHeader.topAnchor.constraint(equalTo: areaLabelView.bottomAnchor, constant: 10),
+            ingredientHeader.topAnchor.constraint(equalTo: areaLabelView.bottomAnchor, constant: 20),
             ingredientHeader.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             
             ingredientsLabel.topAnchor.constraint(equalTo: ingredientHeader.bottomAnchor, constant: 10),
@@ -170,7 +173,7 @@ class DetailMenuViewController: UIViewController {
 private extension DetailMenuViewController {
     func createLabelAreaView() -> UIView {
         let areaView: UIView = UIView()
-        areaView.layer.cornerRadius = 7.0
+        areaView.layer.cornerRadius = 12.0
         areaView.backgroundColor = .lightGray
         areaView.addSubview(areaLabel)
         

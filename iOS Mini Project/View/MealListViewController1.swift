@@ -37,7 +37,7 @@ class MealListViewController1: UIViewController {
     
     private func configureUI(){
         self.navigationController?.navigationBar.prefersLargeTitles = true
-        self.title = "Meals"
+        self.title = "Choose Your Menu"
         
         // Set up search bar
         let searchController = UISearchController(searchResultsController: nil)
@@ -61,23 +61,28 @@ class MealListViewController1: UIViewController {
     }
     
     private func populateMeals() async {
-        await vm.populateMeals(url: Constants.Urls.allMeals!)
-        DispatchQueue.main.async { [weak self] in
-            self?.filteredMeals = self?.vm.meals ?? []
-            self?.collectionView.reloadData()
+        // Initially fetch meals with an empty search term
+        await fetchMeals(searchQuery: "")
+    }
+    
+    // Fetch meals from the API based on the search query
+    private func fetchMeals(searchQuery: String) async {
+        do {
+            let meals = try await Webservice().getMeals(searchQuery: searchQuery)
+            self.filteredMeals = meals.map { MealDataModel(meal: $0) }
+            DispatchQueue.main.async {
+                self.collectionView.reloadData()
+            }
+        } catch {
+            print("Error fetching meals: \(error)")
         }
     }
     
     // Filter the meals based on the search text
     private func filterMeals(for searchText: String) {
-        if searchText.isEmpty {
-            filteredMeals = vm.meals
-        } else {
-            filteredMeals = vm.meals.filter { meal in
-                return meal.mealName.lowercased().contains(searchText.lowercased())
-            }
+        Task {
+            await fetchMeals(searchQuery: searchText)
         }
-        collectionView.reloadData()
     }
 }
 
@@ -110,7 +115,12 @@ extension MealListViewController1: UICollectionViewDelegate, UICollectionViewDat
     
     // TODO: CREATE FUNC WHEN TAPPED IT WILL GO TO THE NEXT PAGE.
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let selectedMeal = self.vm.meals[indexPath.row]
+        guard !self.filteredMeals.isEmpty else {
+            print("No meals available")
+            return // Optionally show an alert to inform the user
+        }
+        
+        let selectedMeal = self.filteredMeals[indexPath.row]
         
         // Initialize DetailMenuViewController
         let detailVC = DetailMenuViewController()
